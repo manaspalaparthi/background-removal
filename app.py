@@ -6,6 +6,7 @@ import model
 import os, shutil
 import time
 
+
 app = Flask(__name__)
 api = Api(app)
 
@@ -21,13 +22,15 @@ class predict(Resource):
 
             if(os.environ["BACKEND_URL"] != backend_url):
                 os.environ["BACKEND_URL"] = backend_url
-        
-            inputdata = input_dict["dataFileURL"]        
+
+            inputdata = input_dict["dataFileURL"]
+
+
             if(os.path.exists("tmp")):
                 shutil.rmtree("tmp")
             os.mkdir('tmp')
             #updating the datashop job as running
-            post_process.updateJob(input_dict["jobID"], "running", None)
+            post_process.updateJob_kafka(input_dict, "running", None)
 
             # running the preprocessing steps for the model. It takes dataset URL, jobID, json as input, download the dataset and read the input.
             inputPayloadForService = pre_process.run(input_dict["jobID"], inputdata["url"], inputdata["json"])
@@ -36,18 +39,17 @@ class predict(Resource):
             insightsDataFileLocation = model.run(input_dict["jobID"], inputPayloadForService)
 
             # It takes insightsDataFileLocation, jobID as Input, upload the insights file to s3 and get the downloadable link for the same. and also send the jobID and insights link to the Datashop application.
-            status_map = post_process.run(input_dict["jobID"], insightsDataFileLocation)
-            print(status_map)
+            status_map = post_process.run(input_dict, insightsDataFileLocation)
 
             duration = time.time() - start;
 
-            return {"statusCode": status_map["status_code"], "body": status_map["json_response"], "duration":duration}
+            return None
                         
         except Exception as e:
             #updating job with FAILED status.
             try:
                 duration = time.time() - start;
-                post_process.updateJob(input_dict["jobID"], None, str(e))
+                post_process.updateJob_kafka(input_dict, None, str(e))
                 return {"statusCode": 400, "error": str(e), "duration":duration}
             except Exception as e:
                 duration = time.time() - start;

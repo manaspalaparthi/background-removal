@@ -65,15 +65,17 @@ def naive_cutout(img: Image, mask: Image) -> Image:
 
 
 def remove(
-    data: bytes,
+    data ,
     alpha_matting: bool = False,
     alpha_matting_foreground_threshold: int = 240,
     alpha_matting_background_threshold: int = 10,
     alpha_matting_erode_size: int = 10,
     session: Optional[ort.InferenceSession] = None,
     only_mask: bool = False,
-) -> bytes:
-    img = Image.open(io.BytesIO(data)).convert("RGB")
+):
+    #img = Image.open(io.BytesIO(data)).convert("RGB")
+
+    img =data
 
     if session is None:
         session = ort_session("u2net")

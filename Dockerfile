@@ -14,9 +14,9 @@ COPY . .
 
 RUN pip3 install -r requirements.txt
 
-
 RUN wget https://models.s3.ap-southeast-2.amazonaws.com/u2net.onnx -P models/
 
 EXPOSE 5000
 
 CMD [ "python3", "-m" , "flask", "run","--host=0.0.0.0"]
+

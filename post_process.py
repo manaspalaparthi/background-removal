@@ -2,9 +2,10 @@ import json
 import requests
 import zipfile
 import os
-import backend 
+import backend
+from kafka import KafkaProducer
 
-def run(jobID, dataLocation):
+def run(input_dict, dataLocation):
     """
     title:: 
         run
@@ -25,56 +26,71 @@ def run(jobID, dataLocation):
     file_name = dataLocation.split("/")[-1]
     file_path = dataLocation.replace(file_name,"")
 
+
     try:
         insightsS3Link = backend.upload_image(file_name, file_path)
         print("insights link here:",insightsS3Link)
-        return updateJob(jobID, insightsS3Link, None)
+        return updateJob_kafka(input_dict, insightsS3Link, None)
 
     except Exception as e:
-        return updateJob(jobID, None, str(e))
-        
+        return updateJob_kafka(input_dict, None, str(e))
 
-def updateJob(jobID, insightsS3Link, err):
+
+def updateJob_kafka(input_dict, insightsS3Link, err):
     """
-    title:: 
+    title::
         __updateJob
-    description:: 
+    description::
         Update the dataapplication with insightsLink.
-    inputs:: 
-    jobID 
+    inputs::
+    jobID
        Job ID from datashop application.
+       kafka_URL from input_dict["kafkaBrokerURL"]
+       kafka_Group from input_dict["kafkaGroupId"]
+       kafka_Topic from input_dict["kafkaTopic"]
+
     insightsS3Link
        Downloadable URL of the insights.
-        
-    returns:: 
-    payloadforservice
-        response from the datashop application.
+
+    returns::
+             none
     """
 
-    status_map = {'status_code': '', 'json_response': ''}
-    dataShopEndpointURL = f"{os.environ.get('BACKEND_URL')}/api/job/updateJob"
+    #status_map = {'status_code': '', 'json_response': ''}
+    #dataShopEndpointURL = f"{os.environ.get('BACKEND_URL')}/api/job/updateJob"
 
-    if(err):
+    jobID = input_dict["jobID"]
+    kafka_URL = input_dict["kafkaBrokerURL"]
+    kafka_Group = input_dict["kafkaGroupId"]
+    kafka_Topic = input_dict["kafkaTopic"]
+
+    if "".__eq__(kafka_URL) and "".__eq__(kafka_Group) and "".__eq__(kafka_Topic):
+        return "ERROR NO KAFKA CONFIGURATION"
+
+    if (err):
         payload = json.dumps({
             "insightFileURL": "N/A",
-            "jobid":jobID
+            "jobid": jobID,
+            "jobStatus": "failed"
+
         })
     else:
         payload = json.dumps({
-                    "insightFileURL": insightsS3Link,
-                    "jobid":jobID
-                })
+            "insightFileURL": insightsS3Link,
+            "jobid": jobID,
+            "jobStatus": "success"
+        })
 
-    headers = {
-      'Content-Type': 'application/json'
-    }
-    response = requests.request("PUT", dataShopEndpointURL, headers=headers, data=payload)
-    status_map["json_response"] = json.dumps(response.text)
-    status_map["status_code"] = response.status_code
-    return status_map
+    producer = KafkaProducer(bootstrap_servers=kafka_URL, value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+
+    producer.send(kafka_Topic, payload)
+
+    # Quit Kafka
+    producer.close()
+
+    return None
 
 
-    
 def zip_output_files(fileLocationToZip):
 
     zip_file = "tmp/post-process/" + fileLocationToZip.split("/")[-1]+ ".zip"
