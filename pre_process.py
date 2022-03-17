@@ -2,6 +2,7 @@ import requests
 import zipfile
 import os
 import cv2
+from PIL import Image
 
 
 """
@@ -45,14 +46,15 @@ def run(jobID, url,json1):
                 inputPayloadForService = f.read()  
         else:
             #Handle your file located in location - input_file_location
-            image = cv2.imread(input_file_location)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            success, encoded_image = cv2.imencode('.png', image)
-            content2 = encoded_image.tobytes()
-
-            # Handle your file located in location - input_file_location
-            # with open(input_file_location) as f:
-            inputPayloadForService = content2
+            # image = cv2.imread(input_file_location)
+            # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # success, encoded_image = cv2.imencode('.png', image)
+            # content2 = encoded_image.tobytes()
+            #
+            # # Handle your file located in location - input_file_location
+            # # with open(input_file_location) as f:
+            # inputPayloadForService = content2
+            inputPayloadForService = Image.open(input_file_location)
         return inputPayloadForService
     
     else:
@@ -65,11 +67,10 @@ def run(jobID, url,json1):
         with open(input_file_location) as f: 
             inputPayloadFromURL = f.read()  
         
-        inputPayloadFromJSON = json1['body']            
+        inputPayloadFromJSON = json1['body']
         inputPayloadForService = [inputPayloadFromURL,inputPayloadFromJSON]    
         
         return inputPayloadForService
-
 
 
 def extract_zip_file(zipped_file):

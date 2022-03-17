@@ -30,12 +30,17 @@ class predict(Resource):
 
             # running the preprocessing steps for the model. It takes dataset URL, jobID, json as input, download the dataset and read the input.
             inputPayloadForService = pre_process.run(input_dict["jobID"], inputdata["url"], inputdata["json"])
+            print("preprocessing finished")
 
             # model buliding/ getting the predictions here. It takes jobID and inputPayloadForService as input, run the model and get precitions saved in the temp folder of lambda.
             insightsDataFileLocation = model.run(input_dict["jobID"], inputPayloadForService)
 
+            print("inference finished")
+
             # It takes insightsDataFileLocation, jobID as Input, upload the insights file to s3 and get the downloadable link for the same. and also send the jobID and insights link to the Datashop application.
             status_map = post_process.run(input_dict["jobID"], insightsDataFileLocation)
+            print("postprocessing finished")
+            print("jobDone!")
             print(status_map)
 
             duration = time.time() - start;
