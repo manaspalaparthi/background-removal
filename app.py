@@ -16,13 +16,12 @@ class predict(Resource):
         try:
             start = time.time();
             # Loads the body of the event.
-            input_dict = request.get_json()  
-            backend_url = input_dict["datashopServerAddress"] 
+            input_dict = request.get_json()
+            os.environ["BACKEND_URL"] = input_dict["datashopServerAddress"]
 
-            if(os.environ["BACKEND_URL"] != backend_url):
-                os.environ["BACKEND_URL"] = backend_url
-        
-            inputdata = input_dict["dataFileURL"]        
+            print(input_dict)
+
+            inputdata = input_dict["dataFileURL"]
             if(os.path.exists("tmp")):
                 shutil.rmtree("tmp")
             os.mkdir('tmp')
@@ -31,7 +30,7 @@ class predict(Resource):
 
             # running the preprocessing steps for the model. It takes dataset URL, jobID, json as input, download the dataset and read the input.
             inputPayloadForService = pre_process.run(input_dict["jobID"], inputdata["url"], inputdata["json"])
-            
+
             # model buliding/ getting the predictions here. It takes jobID and inputPayloadForService as input, run the model and get precitions saved in the temp folder of lambda.
             insightsDataFileLocation = model.run(input_dict["jobID"], inputPayloadForService)
 
@@ -51,7 +50,7 @@ class predict(Resource):
                 return {"statusCode": 400, "error": str(e), "duration":duration}
             except Exception as e:
                 duration = time.time() - start;
-                return {"statusCode": 400, "error": str(e),"duration":duration}                
+                return {"statusCode": 400, "error": str(e),"duration":duration}
 
 api.add_resource(predict, '/predict')
 
